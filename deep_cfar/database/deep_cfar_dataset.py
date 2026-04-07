@@ -69,13 +69,14 @@ class DeepCFARDataset:
 
             # DILATE the mask to make the target physically larger for the CNN
             # iterations=2 will expand the mask by 2 pixels in all directions
-            thick_mask = binary_dilation(raw_mask, iterations=2).astype(np.float32)
+            thick_mask = binary_dilation(raw_mask, iterations=1).astype(np.float32)
 
             # Logically OR it with the master mask
             label_mask = np.maximum(label_mask, thick_mask)
 
         # 3. Add noise to the combined signal for the network input
         noisy_signal = self.add_noise_snr(clean_signal, snr_db)
+        # noisy_signal = clean_signal
         noisy_rd_map = self.generate_rd_map(noisy_signal)
 
         return noisy_rd_map.reshape(self.img_size, self.img_size, 1), \

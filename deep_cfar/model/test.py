@@ -100,11 +100,11 @@ def main():
 
     # 1. Visual Verification at high SNR (Sanity Check)
     print("\n--- Visual Verification (20dB) ---")
-    visualize_prediction(model, ds, snr_db=20, num_targets=2)
+    visualize_prediction(model, ds, snr_db=15, num_targets=10)
 
     # 2. Visual Verification at low SNR (Stress Check)
     print("\n--- Visual Verification (5dB) ---")
-    visualize_prediction(model, ds, snr_db=5, num_targets=2)
+    visualize_prediction(model, ds, snr_db=5, num_targets=10)
 
     # 3. The SNR Degradation Sweep
     print("\n--- Starting SNR Stress Test ---")
