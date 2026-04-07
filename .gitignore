@@ -3,3 +3,5 @@ __pycache__/
 .idea/
 *.keras
 .DS_Store
+tfrecords/
+*.tfrecord
