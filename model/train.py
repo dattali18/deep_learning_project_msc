@@ -5,8 +5,8 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
-from database.rad_yolo_dataset import DeepCFARDataset, data_generator
-from model.rad_yolo import RADYOLO
+from database.deep_cfar_dataset import DeepCFARDataset, data_generator
+from model.deep_cfar import DeepCFAR
 
 def plot_training_history(history):
     """
@@ -56,11 +56,11 @@ def plot_training_history(history):
 def main():
     # 1. Configs and Hyperparameters
     config_path = "../database/configs"
-    model_path = "rad_yolo_best.keras"
-    batch_size = 64
+    model_path = "deep_cfar_best.keras"
+    batch_size = 32
 
     # Increased total epochs and defined steps explicitly
-    epochs = 100
+    epochs = 30
     train_steps = 100
 
     # 2. Setup Data Factory (Instantiate ONCE)
@@ -83,13 +83,12 @@ def main():
     ).batch(batch_size).repeat().prefetch(tf.data.AUTOTUNE)
 
     # 3. Initialize and Compile RAD-YOLO
-    net = RADYOLO()
+    net = DeepCFAR()
     net.compile_model(lr=0.001)
 
     # 4. Callbacks
     callbacks = [
         # Increased patience to 12 to ride out noisy validation spikes
-        EarlyStopping(monitor='val_loss', patience=12, restore_best_weights=True),
         ModelCheckpoint(model_path, monitor='val_loss', save_best_only=True),
         EarlyStopping(
             monitor='val_loss',
@@ -110,8 +109,8 @@ def main():
     )
 
     # Save final weights just in case
-    net.model.save("rad_yolo_final.keras")
-    print("Training Complete. Model saved to rad_yolo_final.keras")
+    net.model.save("deep_cfar_final.keras")
+    print("Training Complete. Model saved to deep_cfar_final.keras")
 
     # Plot the history
     plot_training_history(history)

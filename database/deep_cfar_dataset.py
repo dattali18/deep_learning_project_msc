@@ -5,6 +5,7 @@ from radar_signal_simulator.config.submode_config import SubmodeLibrary
 from radar_signal_simulator.config.operating_submode import OperatingSubmode
 from radar_signal_simulator.config.target import Target
 from radar_signal_simulator.radar_signal.generator import RadarSimulator
+from scipy.ndimage import binary_dilation
 
 
 class DeepCFARDataset:
@@ -43,42 +44,53 @@ class DeepCFARDataset:
         return (rd_mag - np.min(rd_mag)) / (max_val + 1e-12)
 
     def get_sample(self, num_targets: int = 1, snr_db: float | int = 20):
-        # 1. Setup Operating Submode
         beam = OperatingSubmode.from_values("default", 0.0, 0.0)
         targets = []
 
-        # 2. Generate N targets
         for _ in range(num_targets):
             r = np.random.uniform(100, self.max_range * 0.9)
             v = np.random.uniform(-self.max_vel * 0.8, self.max_vel * 0.8)
-            t = Target.new([r, 0, 0], [v, 0, 0], rcs=np.random.uniform(0.5, 2.0))
+            # Wide variance in RCS to simulate strong vs weak targets
+            t = Target.new([r, 0, 0], [v, 0, 0], rcs=np.random.uniform(0.1, 5.0))
             targets.append(t)
 
-        # 3. Generate Clean Signal & Mask
-        if num_targets > 0:
-            # Generate pure signal without noise
-            clean_signal = self.sim.generate(targets, beam, noise_sigma=0.0)
-            clean_rd_map = self.generate_rd_map(clean_signal)
+        label_mask = np.zeros((self.img_size, self.img_size), dtype=np.float32)
 
-            # The Label: A binary mask of the clean target peaks.
-            # Using > 0.5 captures the main lobe of the normalized sinc pulse.
-            label_mask = (clean_rd_map > 0.5).astype(np.float32)
-        else:
-            # If 0 targets, create an empty signal and an empty mask
-            shape = (self.radar_cfg.array.rows * self.radar_cfg.array.cols,
-                     self.sm.num_range_gates,
-                     self.sm.num_pulses)
-            clean_signal = np.zeros(shape, dtype=np.complex64)
-            label_mask = np.zeros((self.img_size, self.img_size), dtype=np.float32)
+        # 1. The Input Signal: Generate ALL targets together
+        clean_signal = self.sim.generate(targets, beam, noise_sigma=0.0)
 
-        # 4. Generate Noisy Signal (The Network Input)
-        # Add noise to the clean signal
-        noisy_signal = add_noise_snr(clean_signal, snr_db)
+        # 2. The Perfect Mask: Process each target individually
+        for t in targets:
+            single_sig = self.sim.generate([t], beam, noise_sigma=0.0)
+            single_rd = self.generate_rd_map(single_sig)
+
+            # Threshold at 50% to isolate the main lobe
+            raw_mask = single_rd > 0.5
+
+            # DILATE the mask to make the target physically larger for the CNN
+            # iterations=2 will expand the mask by 2 pixels in all directions
+            thick_mask = binary_dilation(raw_mask, iterations=2).astype(np.float32)
+
+            # Logically OR it with the master mask
+            label_mask = np.maximum(label_mask, thick_mask)
+
+        # 3. Add noise to the combined signal for the network input
+        noisy_signal = self.add_noise_snr(clean_signal, snr_db)
         noisy_rd_map = self.generate_rd_map(noisy_signal)
 
-        # 5. Return matched dimensions: Input (256, 256, 1) and Mask (256, 256, 1)
         return noisy_rd_map.reshape(self.img_size, self.img_size, 1), \
             label_mask.reshape(self.img_size, self.img_size, 1)
+
+    @staticmethod
+    def add_noise_snr(signal, snr_db, noise_floor=1e-12):
+        P_sig = np.min(np.abs(signal) ** 2)
+        P_sig = max(P_sig, noise_floor)
+        P_noise = P_sig / (10 ** (snr_db / 10.0))
+        sigma = np.sqrt(P_noise)
+        noise = (sigma / np.sqrt(2)) * (
+                np.random.randn(*signal.shape) + 1j * np.random.randn(*signal.shape)
+        )
+        return signal + noise
 
 
 def data_generator(ds):
@@ -88,7 +100,7 @@ def data_generator(ds):
     """
     while True:
         # Randomize targets (0 to 3)
-        num_targets = np.random.randint(0, 4)
+        num_targets = np.random.randint(1, 6)
 
         # Phase 1 Training: Easy mode (15dB to 25dB)
         snr = np.random.uniform(15, 25)

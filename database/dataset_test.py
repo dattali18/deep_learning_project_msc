@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Assuming DeepCFARDataset is in database.rad_yolo_dataset
-from database.rad_yolo_dataset import DeepCFARDataset
+from database.deep_cfar_dataset import DeepCFARDataset
 
 
 def visualize_generator_sample(config_dir, num_targets=2, snr_db=15):
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     config_path = "configs/"
 
     # Test with a clear signal first to ensure alignment
-    visualize_generator_sample(config_path, num_targets=2, snr_db=20)
+    visualize_generator_sample(config_path, num_targets=4, snr_db=12)
 
     # You can uncomment this to test the "0 targets" edge case
     # visualize_generator_sample(config_path, num_targets=0, snr_db=15)
