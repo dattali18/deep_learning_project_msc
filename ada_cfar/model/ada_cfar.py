@@ -39,6 +39,32 @@ class AdaCFAR1D:
         return models.Model(inputs, outputs, name="AdaCFAR_1D")
 
     @staticmethod
+    def focal_loss(gamma=2.0, alpha=0.25):
+        """
+        Focal Loss for dense object detection.
+        gamma: Focuses the penalty on hard/confident false alarms.
+        alpha: Balances the weight between target and background pixels.
+        """
+
+        def focal_loss_fixed(y_true, y_pred):
+            # Clip predictions to prevent log(0) exploding gradients
+            epsilon = K.epsilon()
+            y_pred = K.clip(y_pred, epsilon, 1.0 - epsilon)
+
+            # Calculate standard Cross Entropy
+            cross_entropy = -y_true * K.log(y_pred) - (1 - y_true) * K.log(1 - y_pred)
+
+            # Calculate the Focal modulating factor
+            p_t = y_true * y_pred + (1 - y_true) * (1 - y_pred)
+            alpha_factor = y_true * alpha + (1 - y_true) * (1 - alpha)
+            modulating_factor = K.pow((1.0 - p_t), gamma)
+
+            # Combine and return the mean loss
+            return K.mean(alpha_factor * modulating_factor * cross_entropy, axis=-1)
+
+        return focal_loss_fixed
+
+    @staticmethod
     def dice_coef(y_true, y_pred, smooth=1e-6):
         y_true_f = K.flatten(y_true)
         y_pred_f = K.flatten(y_pred)
@@ -52,7 +78,7 @@ class AdaCFAR1D:
     def compile_model(self, lr=0.001):
         self.model.compile(
             optimizer=optimizers.Adam(learning_rate=lr),
-            loss=self.dice_loss,
+            loss=self.focal_loss(),
             metrics=[self.dice_coef]
         )
 

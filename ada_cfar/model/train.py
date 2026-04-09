@@ -12,7 +12,7 @@ def main():
     # 1. Configs
     train_record_path = "../database/tfrecords/train.tfrecord"
     val_record_path = "../database/tfrecords/val.tfrecord"
-    model_path = "adacfar_best.keras"
+    model_path = "adacfar_best_v2.keras"
 
     # Massive batch size because 1D data is incredibly lightweight
     batch_size = 512

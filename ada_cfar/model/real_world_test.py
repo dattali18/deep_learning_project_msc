@@ -212,17 +212,19 @@ def run_threshold_sweep(model, factory, snr_test=25, samples=300):
 
 
 def run_head_to_head(model, factory, samples=300):
+    model_thr = 0.7
+
     print(f"\n{'=' * 95}")
     print(f" CA-CFAR vs AdaCFAR-1D HEAD-TO-HEAD (Profiles: {samples})")
     print(f"{'-' * 95}")
-    print(f" SNR  | Targets | CA-CFAR Pd | CA-CFAR FA | AdaCFAR Pd (th=0.5) | AdaCFAR FA")
+    print(f" SNR  | Targets | CA-CFAR Pd | CA-CFAR FA | AdaCFAR Pd (th={model_thr}) | AdaCFAR FA")
     print(f"{'-' * 95}")
 
     # FIX: Increased num_guard to 6 to prevent Target Self-Masking from the DPC pulse spread
     # Tuned Pfa to 1e-4 for a balanced baseline
 
     # Sweeping from Loud (25dB) to Quiet (5dB)
-    snr_levels = [25, 20, 15, 10, 5]
+    snr_levels = [30, 25, 20, 15, 10, 5]
 
     for snr in snr_levels:
         total_true = 0
@@ -252,7 +254,7 @@ def run_head_to_head(model, factory, samples=300):
             profile_tensor = np.expand_dims(profile, axis=0)
             pred_prob = model(profile_tensor, training=False).numpy().squeeze()
             # Still using the blunt 0.5 threshold for now
-            ada_preds = (pred_prob > 0.1).astype(int)
+            ada_preds = (pred_prob > model_thr).astype(int)
 
             _, a_hits, a_fas = evaluate_profile(true_binary, ada_preds)
 
@@ -274,7 +276,7 @@ def run_head_to_head(model, factory, samples=300):
 
 def main():
     config_path = "../database/configs/"
-    model_path = "adacfar_best.keras"
+    model_path = "adacfar_best_v2.keras"
 
     print("Loading AdaCFAR-1D Model...")
     try:
