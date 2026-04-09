@@ -4,30 +4,33 @@ from tensorflow.keras import layers, models, optimizers
 
 
 class AdaCFAR1D:
-    def __init__(self, input_shape=(None, 1)):
+    def __init__(self, input_shape=(None, 1), version=1):
         # (None, 1) allows it to accept any number of range gates dynamically
         self.input_shape = input_shape
-        self.model = self._build_model()
+        if version == 1:
+            self.model = self._build_model_v1()
+        elif version == 2:
+            self.model = self._build_model_v2()
 
-    def _build_model(self):
+    def _build_model_v1(self):
         """Builds the 1D Dilated Convolutional CFAR Network."""
         inputs = layers.Input(shape=self.input_shape, name="Input_1D_Profile")
 
         # 1. Local Block
         x = layers.Conv1D(32, 3, padding='same', dilation_rate=1, activation='relu')(inputs)
-        x = layers.BatchNormalization(momentum=0.9)(x)  # ADD MOMENTUM HERE
+        x = layers.BatchNormalization(momentum=0.9)(x)
 
         # 2. Near Training Context
         x = layers.Conv1D(32, 3, padding='same', dilation_rate=4, activation='relu')(x)
-        x = layers.BatchNormalization(momentum=0.9)(x)  # AND HERE
+        x = layers.BatchNormalization(momentum=0.9)(x)
 
         # 3. Far Training Context
         x = layers.Conv1D(32, 3, padding='same', dilation_rate=16, activation='relu')(x)
-        x = layers.BatchNormalization(momentum=0.9)(x)  # AND HERE
+        x = layers.BatchNormalization(momentum=0.9)(x)
 
         # 4. Global Clutter Context
         x = layers.Conv1D(32, 3, padding='same', dilation_rate=64, activation='relu')(x)
-        x = layers.BatchNormalization(momentum=0.9)(x)  # AND HERE
+        x = layers.BatchNormalization(momentum=0.9)(x)
 
         # 5. Fusion Layer (Math processing: CUT vs Background)
         x = layers.Conv1D(16, 1, padding='same', activation='relu', name="Fusion_1x1")(x)
@@ -37,6 +40,43 @@ class AdaCFAR1D:
         outputs = layers.Conv1D(1, 1, padding='same', activation='sigmoid', dtype='float32', name="Output_Mask")(x)
 
         return models.Model(inputs, outputs, name="AdaCFAR_1D")
+
+    def _build_model_v2(self):
+        """Builds the AdaCFAR-1D V2 (Wide, Resonant, Skip-Connected)"""
+        inputs = layers.Input(shape=self.input_shape, name="Input_1D_Profile")
+
+        # 1. The Matched Filter Block (Bigger Kernel)
+        # kernel=7 captures the full DPC pulse width perfectly.
+        # We save this output as 'local_features' for our skip connection later.
+        local_features = layers.Conv1D(64, 7, padding='same', dilation_rate=1, activation='relu',
+                                       name="Conv_Pulse_Extractor")(inputs)
+        local_features = layers.BatchNormalization(momentum=0.9)(local_features)
+
+        # 2. The Clutter Sensing Block (Deeper & Wider)
+        # We step up the dilations smoothly to build a comprehensive background map
+        x = layers.Conv1D(64, 3, padding='same', dilation_rate=4, activation='relu', name="Conv_Train_Near")(
+            local_features)
+        x = layers.BatchNormalization(momentum=0.9)(x)
+
+        x = layers.Conv1D(64, 3, padding='same', dilation_rate=16, activation='relu', name="Conv_Train_Mid")(x)
+        x = layers.BatchNormalization(momentum=0.9)(x)
+
+        x = layers.Conv1D(64, 3, padding='same', dilation_rate=64, activation='relu', name="Conv_Clutter_Global")(x)
+        global_features = layers.BatchNormalization(momentum=0.9)(x)
+
+        # 3. The Residual Skip Connection (The Secret Weapon)
+        # We add the pristine local target shape back into the deep global clutter map
+        fused_features = layers.Add(name="Residual_Skip_Add")([local_features, global_features])
+
+        # 4. Fusion and Decision
+        # Condense the 64 filters down into a decision space
+        x = layers.Conv1D(32, 1, padding='same', activation='relu', name="Fusion_1x1")(fused_features)
+        x = layers.BatchNormalization(momentum=0.9)(x)
+
+        # 5. Output Threshold Mask
+        outputs = layers.Conv1D(1, 1, padding='same', activation='sigmoid', dtype='float32', name="Output_Mask")(x)
+
+        return models.Model(inputs, outputs, name="AdaCFAR_1D_V2")
 
     @staticmethod
     def focal_loss(gamma=2.0, alpha=0.25):

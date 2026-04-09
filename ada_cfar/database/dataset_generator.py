@@ -146,4 +146,4 @@ if __name__ == "__main__":
 
     # Generate a small test set and a large training set
     build_tfrecord_dataset(factory, os.path.join(output_dir, "val.tfrecord"), num_samples=1000)
-    build_tfrecord_dataset(factory, os.path.join(output_dir, "train.tfrecord"), num_samples=10000)
+    build_tfrecord_dataset(factory, os.path.join(output_dir, "train.tfrecord"), num_samples=25000)

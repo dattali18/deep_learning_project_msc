@@ -295,7 +295,7 @@ def main():
     # for snr in snr_levels:
     #     run_threshold_sweep(model, factory, snr, 100)
 
-    run_head_to_head(model, factory, samples=100, threshold=0.9)
+    run_head_to_head(model, factory, samples=1000, threshold=0.9)
 
 
 if __name__ == "__main__":

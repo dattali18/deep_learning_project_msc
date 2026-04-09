@@ -48,4 +48,4 @@ if __name__ == "__main__":
     config_path = "configs/"
 
     # Run a stress test: 3 targets, moderate SNR, massive 10x clutter blocks
-    visualize_1d_sample(config_path, num_targets=4, snr_db=20, clutter_mult=10.0)
+    visualize_1d_sample(config_path, num_targets=2, snr_db=50, clutter_mult=10.0)
