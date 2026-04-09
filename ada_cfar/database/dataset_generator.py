@@ -1,5 +1,6 @@
 import os
 import sys
+
 import numpy as np
 import tensorflow as tf
 from scipy.ndimage import binary_dilation
@@ -20,7 +21,7 @@ class AdaCFARDataFactory:
         self.submodes = SubmodeLibrary.load(os.path.join(config_dir, "submodes.json"))
         self.sim = RadarSimulator(self.radar_cfg, self.submodes)
 
-        self.sm = self.submodes.submodes["default"]
+        self.sm = self.submodes.submodes["option-1"]
         self.C = 299792458.0
 
         # In 1D, our input size is exactly the number of range gates
@@ -54,11 +55,11 @@ class AdaCFARDataFactory:
 
     def generate_sample(self, num_targets, snr_base_db, clutter_multiplier=2.0):
         """Generates a cluttered 1D profile and a clean target mask."""
-        beam = OperatingSubmode.from_values("default", 0.0, 0.0)
+        beam = OperatingSubmode.from_values("option-1", 0.0, 0.0)
         targets = []
 
         for _ in range(num_targets):
-            r = np.random.uniform(self.max_range * 0.1, self.max_range * 0.8)
+            r = np.random.uniform(self.max_range * 0.1, self.max_range * 0.7)
             v = np.random.uniform(-self.max_vel * 0.8, self.max_vel * 0.8)
             t = Target.new([r, 0, 0], [v, 0, 0], rcs=np.random.uniform(0.5, 5.0))
             targets.append(t)
@@ -72,9 +73,9 @@ class AdaCFARDataFactory:
             for t in targets:
                 t_sig = self.process_1d_profile(self.sim.generate([t], beam, noise_sigma=0.0))
                 # Threshold at 50% of the main lobe
-                raw_mask = (t_sig > 0.5).astype(np.float32)
+                raw_mask = (t_sig > 0.75).astype(np.float32)
                 # Dilate slightly in 1D so the network has a small "hitbox" to find
-                thick_mask = binary_dilation(raw_mask, iterations=2).astype(np.float32)
+                thick_mask = binary_dilation(raw_mask, iterations=4).astype(np.float32)
                 label_mask = np.maximum(label_mask, thick_mask)
         else:
             clean_master = np.zeros(self.n_gates, dtype=np.float32)
@@ -86,7 +87,7 @@ class AdaCFARDataFactory:
 
         # 3. Inject Clutter Edges (The CFAR Breaker)
         # Randomly pick 1 to 3 blocks of range bins to fill with high-amplitude clutter
-        num_clutter_blocks = np.random.randint(1, 4)
+        num_clutter_blocks = np.random.randint(0, 4)
         for _ in range(num_clutter_blocks):
             clutter_width = np.random.randint(20, 40)  # Width of the clutter block
             start_idx = np.random.randint(0, self.n_gates - clutter_width)
@@ -106,14 +107,14 @@ def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
-def build_tfrecord_dataset(factory, output_path, num_samples=10000):
+def build_tfrecord_dataset(factory: AdaCFARDataFactory, output_path: str, num_samples: int = 10000):
     """Generates samples and serializes them into a high-speed TFRecord file."""
     print(f"Generating {num_samples} samples into {output_path}...")
 
     with tf.io.TFRecordWriter(output_path) as writer:
         for i in range(num_samples):
             num_targets = np.random.randint(0, 5)
-            snr = np.random.uniform(15, 25)  # Base SNR
+            snr = np.random.uniform(15, 30)  # Base SNR
 
             # Generate the numpy arrays
             profile, mask = factory.generate_sample(num_targets, snr)
@@ -130,7 +131,7 @@ def build_tfrecord_dataset(factory, output_path, num_samples=10000):
             example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
             writer.write(example_proto.SerializeToString())
 
-            if (i + 1) % 500 == 0:
+            if (i + 1) % 100 == 0:
                 print(f"Processed {i + 1}/{num_samples} samples...")
 
     print("Dataset generation complete!")

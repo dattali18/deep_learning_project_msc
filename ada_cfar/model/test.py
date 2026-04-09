@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 from ada_cfar import AdaCFAR1D, get_dataset, parse_tfrecord_fn
 
 
-def visualize_predictions(model, record_path, num_samples=3):
+def visualize_predictions(model, record_path, num_samples=1):
     print(f"\nExtracting {num_samples} samples for visual inspection...")
 
     raw_ds = tf.data.TFRecordDataset(record_path)
-    ds = raw_ds.map(parse_tfrecord_fn).shuffle(100).batch(1).take(num_samples)
+    ds = raw_ds.map(parse_tfrecord_fn).repeat().shuffle(1).batch(1).take(num_samples)
 
     for i, (profile, true_mask) in enumerate(ds):
         # FIX 2: Use direct tensor invocation instead of model.predict()
@@ -23,12 +23,12 @@ def visualize_predictions(model, record_path, num_samples=3):
         pred_mask_1d = pred_mask.numpy().squeeze()
 
         # Threshold at 0.5 to create the final CFAR detection mask
-        pred_binary = (pred_mask_1d > 0.5).astype(float)
+        pred_binary = (pred_mask_1d > 0.7).astype(float)
 
         gates = np.arange(len(profile_1d))
 
         # --- Plotting ---
-        fig, ax1 = plt.subplots(figsize=(14, 5))
+        fig, ax1 = plt.subplots(figsize=(12, 5))
 
         color1 = 'tab:blue'
         ax1.set_xlabel('Range Gate Index')
@@ -57,8 +57,8 @@ def visualize_predictions(model, record_path, num_samples=3):
 
 def main():
     val_record_path = "../database/tfrecords/val.tfrecord"
-    model_path = "adacfar_best.keras"
-    batch_size = 512
+    model_path = "adacfar_best_v3.keras"
+    batch_size = 256
 
     print("Loading AdaCFAR-1D Model...")
     try:
@@ -84,7 +84,7 @@ def main():
     print(f"\n--- Running Full Dataset Evaluation on {val_record_path} ---")
     val_ds = get_dataset(val_record_path, batch_size=batch_size)
 
-    results = model.evaluate(val_ds, verbose=1)
+    results = model.evaluate(val_ds, verbose=2)
 
     metrics_dict = dict(zip(model.metrics_names, results))
     print("\nValidation Results:")
@@ -92,7 +92,7 @@ def main():
         print(f"  -> {name.upper()}: {val:.4f}")
 
     # Visual Verification
-    visualize_predictions(model, val_record_path, num_samples=3)
+    visualize_predictions(model, val_record_path, num_samples=1)
 
 
 if __name__ == "__main__":

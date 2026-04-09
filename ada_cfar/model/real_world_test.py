@@ -211,20 +211,19 @@ def run_threshold_sweep(model, factory, snr_test=25, samples=300):
     print(f"{'=' * 75}\n")
 
 
-def run_head_to_head(model, factory, samples=300):
-    model_thr = 0.7
+def run_head_to_head(model, factory, samples=300, threshold=0.5):
 
     print(f"\n{'=' * 95}")
     print(f" CA-CFAR vs AdaCFAR-1D HEAD-TO-HEAD (Profiles: {samples})")
     print(f"{'-' * 95}")
-    print(f" SNR  | Targets | CA-CFAR Pd | CA-CFAR FA | AdaCFAR Pd (th={model_thr}) | AdaCFAR FA")
+    print(f" SNR  | Targets | CA-CFAR Pd | CA-CFAR FA | AdaCFAR Pd (th={threshold}) | AdaCFAR FA")
     print(f"{'-' * 95}")
 
     # FIX: Increased num_guard to 6 to prevent Target Self-Masking from the DPC pulse spread
     # Tuned Pfa to 1e-4 for a balanced baseline
 
     # Sweeping from Loud (25dB) to Quiet (5dB)
-    snr_levels = [30, 25, 20, 15, 10, 5]
+    snr_levels = [30, 25, 20, 15]
 
     for snr in snr_levels:
         total_true = 0
@@ -254,7 +253,7 @@ def run_head_to_head(model, factory, samples=300):
             profile_tensor = np.expand_dims(profile, axis=0)
             pred_prob = model(profile_tensor, training=False).numpy().squeeze()
             # Still using the blunt 0.5 threshold for now
-            ada_preds = (pred_prob > model_thr).astype(int)
+            ada_preds = (pred_prob > threshold).astype(int)
 
             _, a_hits, a_fas = evaluate_profile(true_binary, ada_preds)
 
@@ -276,7 +275,7 @@ def run_head_to_head(model, factory, samples=300):
 
 def main():
     config_path = "../database/configs/"
-    model_path = "adacfar_best_v2.keras"
+    model_path = "adacfar_best_v3.keras"
 
     print("Loading AdaCFAR-1D Model...")
     try:
@@ -289,12 +288,14 @@ def main():
     factory = AdaCFARDataFactory(config_path)
 
     # We will sweep from easy (25dB) down to incredibly hard (5dB)
-    snr_levels = [snr for snr in range(40, 15, -5)]
+    snr_levels = [snr for snr in range(5, 30, 5)]
 
-    # run_real_world_sweep(model, factory, snr_levels, samples_per_level=500)
-    # run_threshold_sweep(model, factory, 5, 100)
+    # run_real_world_sweep(model, factory, snr_levels, samples_per_level=100)
 
-    run_head_to_head(model, factory, samples=100)
+    # for snr in snr_levels:
+    #     run_threshold_sweep(model, factory, snr, 100)
+
+    run_head_to_head(model, factory, samples=100, threshold=0.9)
 
 
 if __name__ == "__main__":

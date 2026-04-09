@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models, optimizers
 import tensorflow.keras.backend as K
+from tensorflow.keras import layers, models, optimizers
 
 
 class AdaCFAR1D:

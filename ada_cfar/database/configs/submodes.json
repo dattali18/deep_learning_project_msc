@@ -1,6 +1,21 @@
 {
-  "default": {
+  "option-1": {
     "fs": 10e6,
+    "prf": 2000.0,
+    "pulse_width": 1e-6,
+    "num_pulses": 256,
+    "num_range_gates": 1024,
+    "azimuth_width": 20.0,
+    "elevation_width": 6.0,
+    "time": 18,
+    "cfar": {
+      "num_training_cells": 16,
+      "num_guard_cells": 4,
+      "threshold": 1e-6
+    }
+  },
+    "option-2": {
+    "fs": 5e6,
     "prf": 2000.0,
     "pulse_width": 1e-6,
     "num_pulses": 256,

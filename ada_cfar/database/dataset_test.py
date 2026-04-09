@@ -19,7 +19,7 @@ def visualize_1d_sample(config_dir, num_targets=2, snr_db=15, clutter_mult=10.0)
     gates = np.arange(len(profile_1d))
 
     # Set up the plot
-    fig, ax1 = plt.subplots(figsize=(14, 6))
+    fig, ax1 = plt.subplots(figsize=(12, 6))
 
     # Plot 1: The Cluttered Radar Profile
     color = 'tab:blue'
@@ -48,4 +48,4 @@ if __name__ == "__main__":
     config_path = "configs/"
 
     # Run a stress test: 3 targets, moderate SNR, massive 10x clutter blocks
-    visualize_1d_sample(config_path, num_targets=4, snr_db=15, clutter_mult=10.0)
+    visualize_1d_sample(config_path, num_targets=4, snr_db=20, clutter_mult=10.0)
