@@ -6,12 +6,16 @@ In modern radar systems, traditional Constant False Alarm Rate (CFAR) algorithms
 **AdaCFAR-1D** is an end-to-end Deep Learning replacement for standard CFAR. It processes 1D non-coherently integrated radar profiles using a specialized Dilated Convolutional Neural Network. By looking at massive global context simultaneously, AdaCFAR learns to recognize sudden environmental changes (clutter edges) and suppresses them without masking the adjacent physical targets.
 
 ## 2. Dataset Generation & Radar Physics
+
 To ensure the neural network learned true radar physics rather than arbitrary mathematical shapes, the training data was generated using a high-fidelity radar signal simulator.
 
 * **The Pipeline:** Raw simulated antenna arrays undergo Beamforming and Digital Pulse Compression (DPC). The complex signals are then envelope-detected and Non-Coherently Integrated (summed over the PRI) into a 1D magnitude profile.
 * **Physical Noise Injection ($kTB F$):** Instead of arbitrary normalization, thermal noise is injected into the complex $I$ and $Q$ channels *before* envelope detection based on absolute physical parameters (System Temperature, Bandwidth, and Noise Figure). This preserves the critical $1/R^4$ power scaling of the radar equation.
 * **Logarithmic Compression:** The final physical signals are compressed into a dB scale, allowing the neural network to handle the massive dynamic range of real radar returns.
 * **Synthetic Clutter:** Massive, localized Rayleigh-distributed amplitude spikes (up to $5.0\times$ the noise power) are injected randomly into the profiles to simulate the severe clutter edges that break traditional algorithms.
+
+![image](images/image1.png)
+![image](images/image2.png)
 
 ## 3. High-Performance Training Engine
 To achieve rapid iteration, the project treats Python as a compiled pipeline. The physically rigorous dataset (10,000+ profiles) is generated offline and serialized into binary **TFRecords**. 
