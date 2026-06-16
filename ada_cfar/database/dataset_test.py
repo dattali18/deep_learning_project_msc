@@ -49,3 +49,6 @@ if __name__ == "__main__":
 
     # Run a stress test: 3 targets, moderate SNR, massive 10x clutter blocks
     visualize_1d_sample(config_path, num_targets=1, snr_db=15, clutter_mult=15.0)
+    visualize_1d_sample(config_path, num_targets=2, snr_db=20, clutter_mult=15.0)
+    visualize_1d_sample(config_path, num_targets=1, snr_db=25, clutter_mult=15.0)
+    visualize_1d_sample(config_path, num_targets=3, snr_db=30, clutter_mult=15.0)
