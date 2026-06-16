@@ -1,0 +1,45 @@
+Model: "AdaCFAR_1D_V2"
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)        ┃ Output Shape      ┃    Param # ┃ Connected to      ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ Input_1D_Profile    │ (None, None, 1)   │          0 │ -                 │
+│ (InputLayer)        │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ Conv_Pulse_Extract… │ (None, None, 64)  │        512 │ Input_1D_Profile… │
+│ (Conv1D)            │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ batch_normalization │ (None, None, 64)  │        256 │ Conv_Pulse_Extra… │
+│ (BatchNormalizatio… │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ Conv_Train_Near     │ (None, None, 64)  │     12,352 │ batch_normalizat… │
+│ (Conv1D)            │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ batch_normalizatio… │ (None, None, 64)  │        256 │ Conv_Train_Near[… │
+│ (BatchNormalizatio… │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ Conv_Train_Mid      │ (None, None, 64)  │     12,352 │ batch_normalizat… │
+│ (Conv1D)            │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ batch_normalizatio… │ (None, None, 64)  │        256 │ Conv_Train_Mid[0… │
+│ (BatchNormalizatio… │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ Conv_Clutter_Global │ (None, None, 64)  │     12,352 │ batch_normalizat… │
+│ (Conv1D)            │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ batch_normalizatio… │ (None, None, 64)  │        256 │ Conv_Clutter_Glo… │
+│ (BatchNormalizatio… │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ Residual_Skip_Add   │ (None, None, 64)  │          0 │ batch_normalizat… │
+│ (Add)               │                   │            │ batch_normalizat… │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ Fusion_1x1 (Conv1D) │ (None, None, 32)  │      2,080 │ Residual_Skip_Ad… │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ batch_normalizatio… │ (None, None, 32)  │        128 │ Fusion_1x1[0][0]  │
+│ (BatchNormalizatio… │                   │            │                   │
+├─────────────────────┼───────────────────┼────────────┼───────────────────┤
+│ Output_Mask         │ (None, None, 1)   │         33 │ batch_normalizat… │
+│ (Conv1D)            │                   │            │                   │
+└─────────────────────┴───────────────────┴────────────┴───────────────────┘
+ Total params: 40,833 (159.50 KB)
+ Trainable params: 40,257 (157.25 KB)
+ Non-trainable params: 576 (2.25 KB)
