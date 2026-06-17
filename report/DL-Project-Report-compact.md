@@ -83,6 +83,8 @@ This interpretation provides the conceptual bridge to deep learning. CA-CFAR is 
 
 A Conv1D layer performs the same kind of local operation, but its weights are learned from data rather than manually specified. The central idea of this project is therefore not to replace signal processing with an unrelated neural network. The idea is to replace a fixed hand-crafted convolutional detector with a learned convolutional detector specialized for the target environment.
 
+![cfar-conv1d](../images/cfar-as-conv.png)
+
 ## 2.4 Target Masking
 
 CA-CFAR works when the training cells are statistically representative of the CUT:
@@ -126,6 +128,7 @@ The target return across pulses is modulated by $e^{j2\pi f_D mT_{PRI}}$, where 
 $$A_R = \sqrt{\frac{P_tG_tG_r\lambda^2\sigma}{(4\pi)^3R^4}}$$
 
 Multiple targets are added linearly before processing. The raw simulated signal is a complex tensor with shape $16 \times 1024 \times 256$, corresponding to $16$ antenna elements, $1024$ range gates, and $256$ pulses.
+
 
 ## 3.3 Radar Configuration
 
@@ -288,6 +291,8 @@ The local path preserves the target response shape, while the global path estima
 
 The final model contains approximately $4.0\times 10^4$ trainable parameters. This is small compared to common image-based CNN architectures and is appropriate for the available synthetic dataset size.
 
+![final-architecture](../images/arch.png)
+
 ## 4.5 Loss Functions
 
 The first model used Dice loss. The Dice coefficient is
@@ -309,6 +314,11 @@ and
 $$\mathcal{L}_{Focal}=-\alpha_t(1-p_t)^\gamma\log(p_t)$$
 
 where $\alpha_t=\alpha y+(1-\alpha)(1-y)$. The implementation used $\gamma=2.0$ and $\alpha=0.25$. Focal loss down-weights easy examples and focuses training on hard errors, especially confident false detections and missed targets near clutter boundaries.
+
+![curve-1](../images/curve1.png)
+
+
+![curve-2](../images/curve2.png)
 
 ## 4.6 Training Setup
 
@@ -379,9 +389,7 @@ The final architecture achieved the best trade-off. At $20\,\mathrm{dB}$, CA-CFA
 
 ## 6.3 Figures
 
-![training-example-1](image1.png)
-
-![training-example-2](image2.png)
+![training-example-2](../images/image2.png)
 
 # 7. Discussion
 

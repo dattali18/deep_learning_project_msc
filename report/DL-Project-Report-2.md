@@ -2,7 +2,7 @@
 
 ## 1. Abstract / Executive Summary
 
-Radar detection is the critical first stage in a radar processing chain, dictating the success of downstream data association and tracking. Classical Constant False Alarm Rate (CFAR) algorithms perform well in homogeneous noise but suffer from "target masking" near clutter edges, where averaged background estimates suppress valid physical targets. 
+Radar detection is the critical first stage in a radar processing chain, dictating the success of downstream data association and tracking. Classical Constant False Alarm Rate (CFAR) algorithms perform well in homogeneous noise but suffer from "target masking" near clutter edges, where averaged background estimates suppress valid physical targets.
 
 This project introduces AdaCFAR-1D, a lightweight, trainable 1D convolutional neural network that frames radar detection as a dense binary segmentation problem over range gates. By learning both local target morphology and broader clutter context, the final architecture improves the probability of detection at $20\text{ dB}$ SNR from $55.6\%$ (classical CA-CFAR) to $71.7\%$, while simultaneously reducing false alarm events from 291 to just 3.
 
@@ -23,7 +23,7 @@ AdaCFAR-1D investigates whether a learned convolutional detector can outperform 
 
 ## 3. Dataset Generation Overview
 
-Because a radar detector must not train on arbitrary mathematical spikes, the dataset was generated using a physics-inspired pulsed radar simulator ($9.6\text{ GHz}$ carrier, $1\text{ }\mu\text{s}$ pulse width, non-coherent integration). 
+Because a radar detector must not train on arbitrary mathematical spikes, the dataset was generated using a physics-inspired pulsed radar simulator ($9.6\text{ GHz}$ carrier, $1\text{ }\mu\text{s}$ pulse width, non-coherent integration).
 
 The neural network operates on 1D non-coherently integrated range profiles. The simulated environment injects:
 * Rayleigh-distributed thermal base noise.
@@ -36,9 +36,10 @@ Crucially, the target labels are not single bins. Because a pulse-compressed tar
 ## 4. Deep Learning Methodology
 
 ### 4.1 Dense 1D Segmentation Framework
-AdaCFAR-1D frames detection as dense segmentation over the 1024 range gates of a profile. It mirrors the CFAR concept but replaces the fixed analytical kernel with learned Conv1D filters. 
+AdaCFAR-1D frames detection as dense segmentation over the 1024 range gates of a profile. It mirrors the CFAR concept but replaces the fixed analytical kernel with learned Conv1D filters.
 
 ### 4.2 Architecture Evolution & The Final Model
+
 The architecture underwent four major iterations to solve the balance between target recovery and false alarm suppression:
 
 * **V1 (Dilated CNN):** Achieved high target recovery near clutter but generated unacceptable operational false alarms.
@@ -54,13 +55,16 @@ The final model contains approximately 40,000 trainable parameters. The architec
 ## 5. Evaluation & Results
 
 ### 5.1 Radar-Oriented Evaluation Metrics
-Per-bin accuracy is discarded in favor of radar-appropriate metrics: Probability of Detection ($P_D$) and False Alarm ($FA$) count. 
+
+Per-bin accuracy is discarded in favor of radar-appropriate metrics: Probability of Detection ($P_D$) and False Alarm ($FA$) count.
 
 Evaluation utilizes a Connected-Component Hit Rule:
+
 * **Hit:** A true target component is detected if any part of it is overlapped by a predicted detection mask.
 * **False Alarm:** A contiguous predicted mask that overlaps no true target is counted as a single false alarm event (as it would generate a single false plot in a tracker).
 
 ### 5.2 Head-to-Head Performance
+
 The final evaluation tested 1,000 simulated profiles per SNR level, utilizing heavy heterogeneous clutter stress (clutter multiplier $= 5.0$). AdaCFAR-1D utilized an inference threshold of $0.9$, optimized for strict false alarm suppression.
 
 | SNR | CA-CFAR Baseline ($P_D$ \| FA) | AdaCFAR-1D Final V4 ($P_D$ \| FA) |
@@ -72,15 +76,15 @@ The final evaluation tested 1,000 simulated profiles per SNR level, utilizing he
 
 The learned detector consistently outperforms the fixed CA-CFAR window, recovering targets in heterogeneous clutter that CFAR routinely masks, while drastically reducing the number of false tracks that would be sent to a downstream data association system.
 
-> [!NOTE] 
+> [!NOTE]
 > *TODO: Insert Figure 1 here showing a noisy profile where CA-CFAR's threshold spikes over a valid target, alongside the AdaCFAR probability mask successfully isolating it.*
 
 
-
 ## 6. Discussion, Limitations & Future Work
+
 This project demonstrates that when classical fixed-window assumptions are violated by heterogeneous clutter, a dedicated convolutional network can learn a superior, task-specific detection rule. The use of Focal Loss and high inference thresholds ensures the network acts as a viable engineering component rather than just a theoretical classifier.
 
-**Limitations:** The primary limitation is the reliance on synthetic data. While physically motivated, the simulator utilizes localized Rayleigh blocks rather than measured environmental clutter (which contains spatial correlation, multipath, and non-Rayleigh distributions). 
+**Limitations:** The primary limitation is the reliance on synthetic data. While physically motivated, the simulator utilizes localized Rayleigh blocks rather than measured environmental clutter (which contains spatial correlation, multipath, and non-Rayleigh distributions).
 
 **Future Work:** *Transitioning from 1D range profiles to 2D range-Doppler maps to allow the network to exploit velocity separation.
 * Benchmarking deterministic runtime and inference latency on target embedded hardware.
